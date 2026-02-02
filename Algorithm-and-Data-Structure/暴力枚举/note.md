@@ -319,4 +319,219 @@ int main(){
 
 ### P2392
 
-#### 
+#### 最优解(我的代码,照抄AI)
+
+```C++
+#include<cstdio>
+#include<cstring>
+#define MAXN 70
+#define max(a,b) ((a>b)?(a):(b))
+using namespace std;
+
+int a[4],val[MAXN],dp[2500],ans=0;
+
+int main(){
+    for (int i=0;i<4;i++){
+        scanf("%d",&a[i]);
+    }
+    for (int i=0;i<4;i++){
+        int sum=0;
+        for (int j=0;j<a[i];j++){
+            scanf("%d",&val[j]);
+            sum+=val[j];
+        }
+        int target=sum/2;
+        memset(dp,0,sizeof(dp));
+        for (int j=0;j<a[i];j++){
+            for (int k=target;k>=val[j];k--){
+                dp[k]=max(dp[k],dp[k-val[j]]+val[j]);
+            }
+        }
+        ans+=sum-dp[target];
+    }
+    printf("%d",ans);
+    return 0;
+}
+```
+
+还是没完全理解dp的处理过程,等到动态规划学完再来复习一下
+
+### P2036
+
+#### 最优解(我的代码,照抄AI)
+
+```C++
+#include<cstdio>
+#include<algorithm>
+#define INF 1e9
+#define MAXN 10
+using namespace std;
+
+int n;
+int s[MAXN],b[MAXN];
+int total_s,total_b;
+int ans=INF;
+
+int main(){
+    scanf("%d",&n);
+    for (int i=0;i<n;i++){
+        scanf("%d%d",&s[i],&b[i]);
+    }
+    for (int i=1;i<(1<<n);i++){
+        total_s=1;
+        total_b=0;
+        for (int j=0;j<n;j++){
+            if ((i>>j)&1){
+                total_s*=s[j];
+                total_b+=b[j];
+            }
+        }
+        ans=min(ans,abs(total_s-total_b));
+    }
+    printf("%d",ans);
+    return 0;
+}
+```
+
+所以套多重循环实在还是太难用了,即便我相处各种小巧思(赋无关值统一枚举变量数,积化和等)也还是败在小巧思上(多余位的无关值正好提供了一个不存在的结果1)
+
+以后这类全部使用位运算
+
+然后**dfs**也可以,代码如下:
+
+```C++
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+
+using namespace std;
+
+int n;
+long long s[15], b[15];
+long long min_diff = 1e18; // 使用足够大的初始值
+
+/**
+ * @param index 当前处理到第几种食材
+ * @param current_s 当前累积的酸度（乘积）
+ * @param current_b 当前累积的苦度（总和）
+ * @param count 记录选择了多少种食材，防止“一种都不选”
+ */
+void dfs(int index, long long current_s, long long current_b, int count) {
+    if (index == n) {
+        if (count > 0) {
+            min_diff = min(min_diff, abs(current_s - current_b));
+        }
+        return;
+    }
+
+    // 选择 1：不选当前食材
+    dfs(index + 1, current_s, current_b, count);
+
+    // 选择 2：选择当前食材
+    dfs(index + 1, current_s * s[index], current_b + b[index], count + 1);
+}
+
+int main() {
+    if (!(cin >> n)) return 0;
+    for (int i = 0; i < n; i++) {
+        cin >> s[i] >> b[i];
+    }
+
+    dfs(0, 1, 0, 0); // 初始酸度为1，苦度为0，计数为0
+
+    cout << min_diff << endl;
+    return 0;
+}
+```
+
+### P1433
+
+[我的代码(全排列暴力枚举,过6个测试点)](./P1433.cpp)
+
+#### 最优解(dfs,剪枝,过10个测试点)
+
+```C++
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iomanip>
+
+#define MAXN 20
+#define INF 1e18 // 使用更大的 INF 避免精度问题
+using namespace std;
+
+struct Point {
+    double x, y;
+};
+
+Point p[MAXN];
+int n;
+bool visited[MAXN];
+double dist[MAXN][MAXN];
+double ans = INF;
+
+// 预计算欧几里得距离
+double get_dist(Point a, Point b) {
+    return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+}
+
+/**
+ * @brief DFS 模拟全排列枚举
+ * @param curr 当前所在点的编号
+ * @param count 已经走过的点数（不含起点）
+ * @param current_dist 当前累计距离
+ */
+void dfs(int curr, int count, double current_dist) {
+    // 【核心剪枝】如果当前距离已经大于等于已知最优解，直接返回
+    if (current_dist >= ans) {
+        return;
+    }
+
+    // 走完了所有点
+    if (count == n) {
+        ans = min(ans, current_dist);
+        return;
+    }
+
+    for (int i = 1; i <= n; i++) {
+        if (!visited[i]) {
+            visited[i] = true;
+            dfs(i, count + 1, current_dist + dist[curr][i]);
+            visited[i] = false; // 回溯
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false); // 加速 I/O
+    cin.tie(0);
+
+    if (!(cin >> n)) return 0;
+
+    p[0].x = 0; p[0].y = 0; // 起点 (0,0)
+    for (int i = 1; i <= n; i++) {
+        cin >> p[i].x >> p[i].y;
+    }
+
+    // 预处理距离矩阵
+    for (int i = 0; i <= n; i++) {
+        for (int j = 0; j <= n; j++) {
+            dist[i][j] = get_dist(p[i], p[j]);
+        }
+    }
+
+    // 从起点 (0) 开始搜索
+    dfs(0, 0, 0.0);
+
+    cout << fixed << setprecision(2) << ans << endl;
+
+    return 0;
+}
+```
+
+如果不把dfs算作暴力枚举的话,那暴力枚举主要就是在找变量间关系(一一映射等)从而减少枚举变量的数量;寻找变量间关系(和一定等)从而减少枚举变量的范围.
+
+位运算提供集合的各项操作.
+
+`algorithm`定义的`next_permutation`函数:next_permutation(para1,para2,para3),[para1,para2)范围内按照para3定义的"大小关系"进行排列,无法排列时返回false,否则为true;para3默认为字典序
